@@ -1,16 +1,17 @@
+// Interface defining the structure of a hand rank
 interface HandRank {
-    name: string,
-    payout: number,
-};
+    name: string;
+    payout: number;
+}
 
+// Interface defining the structure of a hand score
 interface Score {
-    rank: HandRank,
-    scoringCards: Card[],
-};
+    rank: HandRank;
+    scoringCards: Card[];
+}
 
-let Ranks: {
-    [x: string]: HandRank,
-} = {
+// Object containing predefined hand ranks and their corresponding payouts
+let Ranks: { [x: string]: HandRank } = {
     ROYAL_FLUSH: {
         name: 'Royal Flush',
         payout: 800,
@@ -53,20 +54,22 @@ let Ranks: {
     },
 };
 
+// Interface defining the structure of a group of cards with a specific rank
 interface KindsGroup {
     cards: Card[];
     rank: number;
-};
+}
 
+// Class representing a group of cards with the same rank
 class Kinds {
-    private kinds: {
-        [rank: number]: Card[],
-    };
+    private kinds: { [rank: number]: Card[] };
 
-    public constructor (cards: Card[]) {
+    // Constructor to initialize the Kinds class with a set of cards
+    public constructor(cards: Card[]) {
         this.kinds = {};
 
-        cards.forEach(c => {
+        // Group cards by rank
+        cards.forEach((c) => {
             let r = c.rank;
 
             if (this.kinds[r] === undefined) this.kinds[r] = [];
@@ -75,7 +78,8 @@ class Kinds {
         });
     }
 
-    public has (numOfKinds: number): KindsGroup | false {
+    // Method to check if there is a group with a specific number of cards
+    public has(numOfKinds: number): KindsGroup | false {
         let kg = this.all(numOfKinds);
 
         if (kg) return kg[0];
@@ -83,7 +87,8 @@ class Kinds {
         return false;
     }
 
-    public all (numOfKinds: number): KindsGroup[] | false {
+    // Method to retrieve all groups with a specific number of cards
+    public all(numOfKinds: number): KindsGroup[] | false {
         let result: KindsGroup[] = [];
 
         for (let rank of Object.keys(this.kinds)) {
@@ -101,10 +106,12 @@ class Kinds {
     }
 }
 
+// Class representing a hand of cards
 class Hand {
     public readonly cards: Card[];
 
-    public constructor (cards?: Card[]) {
+    // Constructor to initialize the hand with a set of cards (optional)
+    public constructor(cards?: Card[]) {
         if (cards !== undefined) {
             this.cards = cards;
         } else {
@@ -112,17 +119,20 @@ class Hand {
         }
     }
 
-    private isFlush (): boolean {
+    // Private method to check if the hand has a flush
+    private isFlush(): boolean {
         let suit = this.cards[0].suit;
 
-        return this.cards.every(c => c.suit === suit);
+        return this.cards.every((c) => c.suit === suit);
     }
 
-    private isStraight (): boolean {
+    // Private method to check if the hand has a straight
+    private isStraight(): boolean {
         return this.isAceHighStraight() || this.isAceLowStraight();
     }
 
-    private isAceHighStraight (): boolean {
+    // Private method to check if the hand has an Ace-high straight
+    private isAceHighStraight(): boolean {
         let high, low, ranks: number[] = [];
 
         high = low = this.cards[0].rank;
@@ -143,7 +153,8 @@ class Hand {
         return high - low === 4;
     }
 
-    private isAceLowStraight (): boolean {
+    // Private method to check if the hand has an Ace-low straight
+    private isAceLowStraight(): boolean {
         let high, low, ranks: number[] = [];
 
         high = low = this.cards[0].rank;
@@ -162,9 +173,11 @@ class Hand {
         return high - low === 4;
     }
 
-    public has (...ranks: number[]): boolean {
-        return this.cards.some(c => {
-            let r = c.rank, i = ranks.indexOf(r);
+    // Method to check if the hand has specific ranks among its cards
+    public has(...ranks: number[]): boolean {
+        return this.cards.some((c) => {
+            let r = c.rank,
+                i = ranks.indexOf(r);
 
             if (i !== -1) {
                 ranks.splice(i, 1);
@@ -174,7 +187,9 @@ class Hand {
         });
     }
 
-    public getScore (): Score {
+    // Method to calculate the score of the hand
+    public getScore(): Score {
+        // Check for Royal Flush and Straight Flush
         if (this.isFlush() && this.isStraight()) {
             if (this.has(1, 10, 11, 12, 13)) {
                 // Royal flush
@@ -191,8 +206,10 @@ class Hand {
             };
         }
 
+        // Create a Kinds instance to analyze the cards
         let kinds = new Kinds(this.cards);
 
+        // Check for Four of a Kind
         let has4 = kinds.has(4);
 
         if (has4) {
@@ -202,7 +219,9 @@ class Hand {
             };
         }
 
-        let has3 = kinds.has(3), has2 = kinds.has(2);
+        // Check for Full House
+        let has3 = kinds.has(3),
+            has2 = kinds.has(2);
 
         if (has3 && has2) {
             return {
@@ -211,6 +230,7 @@ class Hand {
             };
         }
 
+        // Check for Flush
         if (this.isFlush()) {
             return {
                 rank: Ranks.FLUSH,
@@ -218,6 +238,7 @@ class Hand {
             };
         }
 
+        // Check for Straight
         if (this.isStraight()) {
             return {
                 rank: Ranks.STRAIGHT,
@@ -225,6 +246,7 @@ class Hand {
             };
         }
 
+        // Check for Three of a Kind
         if (has3) {
             return {
                 rank: Ranks.THREE_OF_A_KIND,
@@ -232,6 +254,7 @@ class Hand {
             };
         }
 
+        // Check for Two Pair
         let all2 = kinds.all(2);
 
         if (all2 && all2.length === 2) {
@@ -240,7 +263,7 @@ class Hand {
                 scoringCards: (() => {
                     let cards: Card[] = [];
 
-                    all2.forEach(kg => {
+                    all2.forEach((kg) => {
                         cards = cards.concat(kg.cards);
                     });
 
@@ -249,6 +272,7 @@ class Hand {
             };
         }
 
+        // Check for Jacks or Better
         if (has2 && (has2.rank >= 11 || has2.rank === 1)) {
             return {
                 rank: Ranks.JACKS_OR_BETTER,
@@ -256,6 +280,7 @@ class Hand {
             };
         }
 
+        // Default case: Nothing
         return {
             rank: Ranks.NOTHING,
             scoringCards: [],
